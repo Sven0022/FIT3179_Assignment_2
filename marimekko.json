@@ -1,0 +1,82 @@
+{
+  "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+  "width": "container",
+  "height": 350,
+  "title": "Water Access and Basic Sanitation for Urban and Rural Areas",
+  "data": {
+    "url": "merged_water_data.csv",
+    "format": {"type": "csv"}
+  },
+  "params": [
+    {
+      "name": "selectedYear",
+      "value": 2021,
+      "bind": {
+        "input": "range",
+        "min": 2000,
+        "max": 2022,
+        "step": 1,
+        "name": "Select a year"
+      }
+    }
+  ],
+  "transform": [
+    {
+      "filter": "datum.Period == selectedYear"
+    },
+    {
+      "filter": "datum.Rural_safe > 0 && datum.Urban_safe > 0 && datum.Rural_atleast > 0 && datum.Urban_atleast > 0"
+    },
+    {
+      "calculate": "datum.Total_safe + datum.Total_atleast",
+      "as": "Total_population"
+    },
+    {
+      "window": [{"op": "rank", "as": "rank"}],
+      "sort": [{"field": "Total_population", "order": "descending"}]
+    },
+    {
+      "filter": "datum.rank <= 5"
+    },
+    {
+      "fold": ["Rural_safe", "Urban_safe", "Rural_atleast", "Urban_atleast"],
+      "as": ["Region", "Value"]
+    }
+  ],
+  "mark": {
+    "type": "bar",
+    "size": 50  
+  },
+  "encoding": {
+    "x": {
+      "field": "Location",
+      "type": "nominal",
+      "title": "Country"
+    },
+    "y": {
+      "aggregate": "sum",
+      "field": "Value",
+      "type": "quantitative",
+      "title": "Population",
+      "stack": "normalize"
+    },
+    "color": {
+      "field": "Region",
+      "type": "nominal",
+      "scale": {
+        "domain": ["Rural_safe", "Urban_safe", "Rural_atleast", "Urban_atleast"],
+        "range": ["blue", "orange", "rgb(112, 36, 96)", "red"]
+      },
+      "title": "Water and Sanitation Access",
+      "legend": {
+        "title": "Water and Sanitation Access",
+        "labelExpr": "datum.value === 'Rural_safe' ? 'Rural Safe Drinking Water' : datum.value === 'Urban_safe' ? 'Urban Safe Drinking Water' : datum.value === 'Rural_atleast' ? 'Rural Without Safe Water' : 'Urban Without Safe Water'"
+      }
+    },
+    "tooltip": [
+      {"field": "Location", "title": "Country"},
+      {"field": "Period", "title": "Year"},
+      {"field": "Value", "title": "Population", "format": ","}
+    ]
+  }
+}
